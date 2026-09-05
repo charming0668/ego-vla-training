@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用 Ego 数据训练 VLA：数据格式与训练流程</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #5c5c5c;
+      --line: #ececec;
+      --bg: #fff;
+      --soft: #f7f7f7;
+      --code: #f4f4f4;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--text);
+      font: 17px/1.75 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+    article {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 96px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+    .meta {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    h2 {
+      margin: 52px 0 14px;
+      font-size: 22px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 17px;
+      font-weight: 650;
+    }
+    p { margin: 0 0 14px; }
+    a { color: var(--text); text-underline-offset: 3px; }
+    ul, ol { margin: 0 0 16px; padding-left: 1.25em; }
+    li { margin: 0 0 8px; }
+    li strong { font-weight: 600; }
+    blockquote {
+      margin: 0 0 20px;
+      padding: 0 0 0 16px;
+      border-left: 2px solid var(--text);
+      background: none;
+    }
+    blockquote p { margin: 0; }
+    blockquote footer {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 4px 0 22px;
+    }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    thead th {
+      background: none;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--text);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+    }
+    p code, li code, td code, th code, figcaption code {
+      background: var(--code);
+      padding: 0.08em 0.32em;
+    }
+    figure.code {
+      margin: 0 0 22px;
+    }
+    figure.code figcaption {
+      margin: 0;
+      padding: 7px 12px 0;
+      background: var(--code);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    figure.code figcaption a { color: var(--muted); }
+    pre {
+      margin: 0;
+      padding: 10px 12px 14px;
+      background: var(--code);
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+    .caption, figcaption.cap {
+      margin: 8px 0 24px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    figure.paper {
+      margin: 8px 0 8px;
+    }
+    figure.paper img {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #fff;
+    }
+    details.codefold {
+      margin: 28px 0 16px;
+    }
+    details.codefold > summary {
+      cursor: pointer;
+      list-style: none;
+      font-size: 17px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+    details.codefold > summary::-webkit-details-marker { display: none; }
+    details.codefold > summary::before {
+      content: "▸ ";
+      color: var(--muted);
+      font-weight: 400;
+    }
+    details.codefold[open] > summary::before { content: "▾ "; }
+    details.codefold > summary:hover { color: #111; }
+    details.codefold .codefold-body { margin-top: 12px; }
+
+    .overview {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      margin: 4px 0 8px;
+      border-top: 1px solid var(--text);
+      border-bottom: 1px solid var(--line);
+    }
+    @media (min-width: 760px) {
+      .overview { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .diagram {
+      margin: 0;
+      padding: 20px 0 16px;
+      background: none;
+      border: none;
+    }
+    @media (min-width: 760px) {
+      .diagram {
+        padding: 20px 22px 16px;
+        border-right: 1px solid var(--line);
+      }
+      .diagram:first-child { padding-left: 0; }
+      .diagram:last-child { padding-right: 0; border-right: none; }
+    }
+    .diagram h4 {
+      margin: 0 0 18px;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+    .pipe { margin: 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 12px;
+      position: relative;
+      padding-bottom: 16px;
+    }
+    .step:last-child { padding-bottom: 0; }
+    .step:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 22px;
+      bottom: 0;
+      width: 1px;
+      background: var(--line);
+    }
+    .n {
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: 11px;
+      line-height: 22px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .step p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .step strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    .katex { font-size: 1.05em; }
+    @media (max-width: 640px) {
+      article { padding: 32px 16px 72px; }
+      h1 { font-size: 24px; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+<article>
+  <h1>用 Ego 数据训练 VLA：数据格式与训练流程</h1>
+  <p class="meta">2026-09-05</p>
+
+  <p>人体第一人称视频本身只有像素。要训练 VLA，必须先变成图像、语言和动作标签。下面介绍三个有开源训练代码的项目：用什么 ego 数据、送进训练的张量长什么样、loss 怎么算。</p>
+
+  <blockquote>
+    <p>三条路线都是「人体 ego RGB + 语言 → 预测动作」。差别只在动作怎么定义，以及人到机器人怎么接。</p>
+  </blockquote>
+
+  <h2 id="retarget">1. 人手如何变成夹爪轨迹</h2>
+  <p>Ego 视频里没有电机指令。进入 VLA 之前，要把手的运动写成机械臂能监督的位姿序列：腕部当作末端执行器，手指压成夹爪开合或灵巧手关节。</p>
+
+  <h3>1.1 共同步骤</h3>
+  <ul>
+    <li><strong>得到手</strong>：从第一人称视频估计 3D 手，或直接用 VR / ARKit 骨骼。常见表示是腕部位姿 \(T_{\mathrm{wrist}}\in\mathrm{SE}(3)\)，加上 MANO 参数或指尖 3D。</li>
+    <li><strong>选定坐标系</strong>：把未来腕位变到某一固定参考系。EgoVLA 用<strong>当前相机系</strong>；H-RDT 用 EgoDex 的 <strong>ARKit origin</strong>（地面静止系）；EgoHumanoid 对齐到机器人头相机后再写相对 \(\Delta\mathrm{EEF}\)。</li>
+    <li><strong>腕 → 夹爪 / 臂末端</strong>：腕位置当平移，旋转常写成 rot6D（旋转矩阵前两列）。这就是夹爪或 EEF 的轨迹 \(p_t, R_t\)。相对动作则取 \(\Delta p_t = p_{t}-p_{t-1}\)。</li>
+    <li><strong>手指 → 开合或关节</strong>：平行夹爪只用一个开合量（拇指到掌的距离，或开/关二值）。灵巧手把指尖或 MANO 再经 IK / 小网络映射到机器人手关节。训练时可以先在人手动作空间里学，部署时再 retarget。</li>
+  </ul>
+  <p>时间上会抽成固定长度的 action chunk（例如 1 秒、16 步），和图像、语言对齐后才送进网络。</p>
+
+  <h3>1.2 三个项目怎么接</h3>
+  <ul>
+    <li><strong>EgoVLA</strong>：相机系腕 3D + rot6D + MANO。部署时 MANO 走 IK 得到臂 EEF，指尖再映射到机器人手关节。</li>
+    <li><strong>H-RDT</strong>：双手各 24 维（腕 3 + rot6D + 五指尖 \(\times 3\)），预训练就在这 48 维上。微调时丢掉人手头，换成机器人 action 维。</li>
+    <li><strong>EgoHumanoid</strong>：上肢写成双臂 \(\Delta\mathrm{EEF}\)，手只保留开合，不再保留逐指自由度。</li>
+  </ul>
+
+  <div class="overview">
+    <figure class="diagram">
+      <h4>EgoVLA</h4>
+      <div class="pipe">
+        <div class="step"><span class="n">1</span><div><strong>公开头戴数据</strong><p>TACO / HOT3D / HOI4D / HoloAssist</p></div></div>
+        <div class="step"><span class="n">2</span><div><strong>当前相机系动作</strong><p>腕 3D + rot6D + MANO</p></div></div>
+        <div class="step"><span class="n">3</span><div><strong>NVILA 回归</strong><p>加权 L1/L2，关掉 LM next-token</p></div></div>
+        <div class="step"><span class="n">4</span><div><strong>仿真微调</strong><p>同一 decoder，换 humanoid demo</p></div></div>
+      </div>
+    </figure>
+    <figure class="diagram">
+      <h4>H-RDT</h4>
+      <div class="pipe">
+        <div class="step"><span class="n">1</span><div><strong>EgoDex 头戴</strong><p>AVP 1080p + 双手 3D</p></div></div>
+        <div class="step"><span class="n">2</span><div><strong>ARKit 系 48D</strong><p>腕 + rot6D + 五指尖 × 2</p></div></div>
+        <div class="step"><span class="n">3</span><div><strong>T5 + DiT</strong><p>预计算语言，flow matching MSE</p></div></div>
+        <div class="step"><span class="n">4</span><div><strong>换头微调</strong><p>冻 backbone，重初始化 action 头</p></div></div>
+      </div>
+    </figure>
+    <figure class="diagram">
+      <h4>EgoHumanoid</h4>
+      <div class="pipe">
+        <div class="step"><span class="n">1</span><div><strong>头戴 ZED</strong><p>PICO VR + ZED Mini</p></div></div>
+        <div class="step"><span class="n">2</span><div><strong>视角 / 动作对齐</strong><p>\(\Delta\mathrm{EEF}\) + 导航 + 手开合</p></div></div>
+        <div class="step"><span class="n">3</span><div><strong>\(\pi_{0.5}\)</strong><p>PaliGemma + flow matching</p></div></div>
+        <div class="step"><span class="n">4</span><div><strong>人机共训</strong><p>与 G1 遥操作加权 mix</p></div></div>
+      </div>
+    </figure>
+  </div>
+  <p class="caption">图 1. 三个项目从 ego 源到机器人，各自四步。</p>
+
+  <h2 id="egovla">2. EgoVLA</h2>
+  <blockquote>
+    <p>NVILA / Qwen2-VL 做 backbone。图像和语言走 VLM，动作由 trajectory decoder 回归。这是三条里最接近标准 VLM-VLA 的做法。</p>
+    <footer>Yang et al. EgoVLA. <a href="https://arxiv.org/abs/2507.12440">arXiv:2507.12440</a> · <a href="https://github.com/RchalYang/EgoVLA_Release">GitHub</a></footer>
+  </blockquote>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egovla-teaser-01.svg" alt="EgoVLA teaser：人体第一人称视频与人形机器人经统一动作空间训练">
+  </figure>
+  <p class="caption">图 2. EgoVLA 总览：人体第一人称视频经统一动作空间训练、部署。</p>
+
+  <h3>2.1 数据格式</h3>
+  <p>预处理把 TACO、HOT3D、HOI4D、HoloAssist 写成 HuggingFace 样本。未来腕位用当前相机 pose 的逆，变到当前相机系（<code>transform_to_current_frame</code>）。</p>
+  <ul>
+    <li><strong>RGB</strong>：当前帧 + 历史 5 步，<code>add_his_img_skip=6</code>，ego 相机。</li>
+    <li><strong>腕 3D</strong>：<code>future_*_wrist_3d</code>，当前相机系，每手 3 维。</li>
+    <li><strong>腕旋转</strong>：训练用 rot6d，每手 6 维，合计 12。</li>
+    <li><strong>MANO</strong>：<code>--use_mano True</code>，左右合计 30 维。</li>
+    <li><strong>语言</strong>：<code>--use_short_language_label True</code>。</li>
+    <li><strong>时间</strong>：30Hz 采样，预测未来 30 步，约 1 秒 chunk。</li>
+  </ul>
+  <blockquote>
+    <p>预训练 mix 为 <code>hoi4d_30hz_train+hot3d_30hz_train+taco_30hz_train+holoassist_train_30hz_sub5</code>。动作输出 \(\,48 = 6_{\mathrm{EE}} + 30_{\mathrm{hand}} + 12_{\mathrm{rot6d}}\)。</p>
+  </blockquote>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egovla-instruction-following-human-05.svg" alt="EgoVLA 第一人称人手轨迹与语言指令">
+  </figure>
+  <p class="caption">图 3. HOI4D 第一人称人手轨迹：红为 GT，绿为预测；改语言指令后轨迹变化。</p>
+
+  <h3>2.2 训练流程</h3>
+  <ul>
+    <li><strong>人体预训练</strong>：从 <code>vila-qwen2-vl-1.5b-instruct-sft-...</code> 出发；vision tower、mm projector、language model 全解冻。</li>
+    <li><strong>仿真微调</strong>：<code>training_scripts/robot_finetuning/*.sh</code>，lr 降到 2e-5 / 2e-6，仍用同一套 EE / hand / rot loss。</li>
+    <li><strong>目标</strong>：轨迹 decoder 加权 L1/L2。\(\lambda_{\mathrm{LM}}=0\)，关掉 LM next-token。\(\mathcal{L}=20\,\mathcal{L}_{\mathrm{ee}}+5\,\mathcal{L}_{\mathrm{hand}}+5\,\mathcal{L}_{\mathrm{rot}}\)。</li>
+    <li><strong>Batch</strong>：HuggingFace Trainer + DeepSpeed ZeRO-3；每卡 16，8 GPU，20 epoch。</li>
+  </ul>
+
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egovla-pipeline-02.svg" alt="EgoVLA 训练架构：视觉历史、语言、本体感觉进入 NVILA">
+  </figure>
+  <p class="caption">图 4. 训练架构：ego 视觉历史 + 语言 + proprio → NVILA-2B → Action Head。</p>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egovla-align-action-space-03.svg" alt="EgoVLA 人体与机器人统一动作空间">
+  </figure>
+  <p class="caption">图 5. 人体 / 机器人动作对齐与 MANO、IK retarget。</p>
+
+  <details class="codefold">
+    <summary>2.3 核心代码</summary>
+    <div class="codefold-body">
+  <figure class="code">
+    <figcaption><a href="https://github.com/RchalYang/EgoVLA_Release/blob/09645b9d1729f266f0e532d506a5e57d4a8c09e3/human_plan/dataset_preprocessing/utils/transformations.py">transformations.py</a> · 相机系变换</figcaption>
+    <pre><code>def transform_to_current_frame(inv_cam_pose, world_frame_pos):
+    points = np.einsum(
+        "ij, nkj-> nki",
+        inv_cam_pose,
+        get_homo(world_frame_pos)
+    ).astype(dtype=np.float64)
+    return points[..., :3].astype(dtype=np.float64)</code></pre>
+  </figure>
+  <figure class="code">
+    <figcaption><a href="https://github.com/RchalYang/EgoVLA_Release/blob/09645b9d1729f266f0e532d506a5e57d4a8c09e3/training_scripts/human_video_pretraining/trans_v2_f1p30_split.sh">trans_v2_f1p30_split.sh</a> · 预训练脚本</figcaption>
+    <pre><code>human_plan/vila_train/train_mem.py \
+    --model_name_or_path $PRETRAINED_MODELS/vila-qwen2-vl-1.5b-instruct-sft-20240830191953 \
+    --data_mixture hoi4d_30hz_train+hot3d_30hz_train+taco_30hz_train+holoassist_train_30hz_sub5 \
+    --tune_vision_tower True --tune_mm_projector True --tune_language_model True \
+    --predict_future_step 30 --traj_action_output_dim 48 \
+    --ee_loss_coeff 20.0 --hand_loss_coeff 5.0 --ee_rot_loss_coeff 5.0 \
+    --traj_action_output_ee_dim 6 --traj_action_output_hand_dim 30 \
+    --traj_action_output_ee_rot_dim 12 --ee_rot_representation rot6d \
+    --use_mano True --merge_hand True</code></pre>
+  </figure>
+  <figure class="code">
+    <figcaption><a href="https://github.com/RchalYang/EgoVLA_Release/blob/09645b9d1729f266f0e532d506a5e57d4a8c09e3/VILA/llava/model/language_model/llava_llama.py">llava_llama.py</a> · train step / loss</figcaption>
+    <pre><code>l2_loss = self.config.ee_loss_coeff * ee_l2_loss + \
+    self.config.hand_loss_coeff * hand_l2_loss + \
+    self.config.ee_2d_loss_coeff * ee_2d_l2_loss + \
+    self.config.ee_rot_loss_coeff * ee_rot_loss + \
+    self.config.hand_kp_loss_coeff * hand_kp_loss
+next_token_prediction_loss = outputs.loss
+loss = l2_loss + self.config.next_token_loss_coeff * next_token_prediction_loss</code></pre>
+  </figure>
+    </div>
+  </details>
+
+  <h2 id="hrdt">3. H-RDT</h2>
+  <blockquote>
+    <p>在 EgoDex 上预训练 DiT / flow，再换 action 头微调到双臂机器人。这是 T5 语言条件的 Diffusion Transformer，不是自回归 VLM。语言是预计算 embedding，训练时不再跑 T5。</p>
+    <footer>Bi et al. H-RDT. <a href="https://arxiv.org/abs/2507.23523">arXiv:2507.23523</a> · <a href="https://github.com/HongzheBi/H_RDT">GitHub</a></footer>
+  </blockquote>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/hrdt-overview-1.svg" alt="H-RDT 总览：ego 人手预训练数据与跨本体微调">
+  </figure>
+  <p class="caption">图 6. H-RDT 总览：ego 人手预训练后再跨本体微调。</p>
+
+  <h3>3.1 数据格式</h3>
+  <p>源数据是 Apple EgoDex（Vision Pro 头戴 1080p 30Hz + 双手 3D）。H-RDT 自己预计算 48D action 和 T5 语言向量。</p>
+  <ul>
+    <li><strong>配置</strong>：<code>action_dim=48</code>，chunk=16，单相机、单帧历史，<code>upsample_rate=3</code>（约 10Hz 抽帧）。</li>
+    <li><strong>48D</strong>：每手 24 维 × 2 = 腕位置 3 + 旋转 6D + 五指尖 3D×5。</li>
+    <li><strong>坐标系</strong>：直接读 EgoDex <code>transforms/*</code>，即 ARKit origin（地面静止系），没有转到当前相机系。</li>
+    <li><strong>样本</strong>：<code>states (1, 48)</code>，<code>actions (chunk, 48)</code> 归一化到 \([-1,1]\)，图像 1080×1920，外加 T5 <code>lang_embeds</code>。</li>
+    <li><strong>微调</strong>：机器人侧常见 <code>action_dim: 14</code>。</li>
+  </ul>
+  <blockquote>
+    <p>这里的 48D 停在 ARKit origin，和 EgoVLA 的「当前相机系腕」不是同一套坐标。</p>
+  </blockquote>
+
+  <h3>3.2 训练流程</h3>
+  <ul>
+    <li><strong>预处理</strong>：<code>precompute_48d_actions.py</code> → <code>calc_stat.py</code>（min/max）→ <code>encode_lang_batch.py</code>（T5-XXL）。</li>
+    <li><strong>预训练</strong>：<code>pretrain.sh --mode=pretrain</code>，flow matching \(\mathrm{MSE}(\hat{v},\,a-\varepsilon)\)，其中 \(x_t = t\,a+(1-t)\,\varepsilon\)，\(\mathrm{lr}=10^{-4}\)，最多 100 万 step，语言用预计算 embedding。</li>
+    <li><strong>微调</strong>：加载 backbone，跳过 <code>action_encoder</code> / <code>action_decoder</code> / adaptor / <code>final_layer</code>，按新 <code>action_dim</code> 重初始化。视觉是 SigLIP/DINO，语言是 T5 cross-attn。</li>
+  </ul>
+
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/hrdt-framework-2.svg" alt="H-RDT 两阶段训练：人体预训练与跨本体微调">
+  </figure>
+  <p class="caption">图 7. 两阶段训练：人体 ego 预训练，再冻视觉 / 语言、换机器人 action 头。</p>
+
+  <details class="codefold">
+    <summary>3.3 核心代码</summary>
+    <div class="codefold-body">
+  <figure class="code">
+    <figcaption><a href="https://github.com/HongzheBi/H_RDT/blob/8be02cb5e631898dfab12f9b6bbb77e32999547a/datasets/pretrain/precompute_48d_actions.py">precompute_48d_actions.py</a> · 48D 构造</figcaption>
+    <pre><code>hand_position = hand_transform[:3, 3]
+rotation_6d = np.concatenate([rotation_matrix[:, 0], rotation_matrix[:, 1]])
+for fingertip in fingertip_joints[hand_side]:
+    fingertip_pos = fingertip_transform[:3, 3]
+    action_vector.extend(fingertip_pos)
+# 左右手拼接 → 48</code></pre>
+  </figure>
+  <figure class="code">
+    <figcaption><a href="https://github.com/HongzheBi/H_RDT/blob/8be02cb5e631898dfab12f9b6bbb77e32999547a/models/hrdt_runner.py">hrdt_runner.py</a> / <a href="https://github.com/HongzheBi/H_RDT/blob/8be02cb5e631898dfab12f9b6bbb77e32999547a/train/train.py">train.py</a> · loss</figcaption>
+    <pre><code>noisy_action = (action_gt * broadcasted + noise * (1 - broadcasted))
+pred = self.model(state_action_traj, timesteps, img_c=img_c, lang_c=lang_c, ...)
+target = action_gt - noise
+diff_loss = F.mse_loss(pred, target)
+
+loss_dict = hrdt.compute_loss(
+    state_tokens=batch["states"], action_gt=batch["actions"],
+    image_tokens=image_features, lang_tokens=lang_embeds, ...)</code></pre>
+  </figure>
+    </div>
+  </details>
+
+  <h2 id="egohumanoid">4. EgoHumanoid</h2>
+  <blockquote>
+    <p>自采集头戴 ego 人体演示，加上少量 Unitree G1 遥操作，共训 \(\pi_{0.5}\)。人侧源数据是头戴 ZED，不是机器人相机。</p>
+    <footer>OpenDriveLab. EgoHumanoid. <a href="https://arxiv.org/abs/2602.10106">arXiv:2602.10106</a> · <a href="https://github.com/OpenDriveLab/EgoHumanoid">GitHub</a></footer>
+  </blockquote>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egohumanoid-teaser-01.svg" alt="EgoHumanoid 总览：野外 ego 人数据与实验室机器人共训">
+  </figure>
+  <p class="caption">图 8. 野外 ego 人数据与实验室机器人数据对齐后共训。</p>
+
+  <h3>4.1 数据格式</h3>
+  <p>人体采集：PICO VR + 头戴 ZED Mini。处理链是 reorder → 骨盆轨迹导航 <code>[vx, vy, yaw_rate]</code> → 降采样（默认 ×5）→ 合并双目 JPEG → 手开合 → 转 LeRobot。另有 view alignment，把人体视角往 G1 头相机靠。</p>
+  <ul>
+    <li><strong>图像</strong>：<code>observation.images.left</code>，头左相机 RGB。</li>
+    <li><strong>双臂</strong>：<code>action_delta_eef</code>，<code>(H, 12)</code>。</li>
+    <li><strong>底盘</strong>：<code>delta_height (H, 1)</code>，<code>teleop_navigate (H, 3)</code>。</li>
+    <li><strong>手</strong>：<code>hand_status</code>，开合，可按数据集 mask。</li>
+    <li><strong>语言</strong>：<code>prompt</code>，任务描述。</li>
+    <li><strong>混合</strong>：人 / 机多 <code>repo_id</code>，示例权重 <code>[0.66, 0.11, 0.22]</code>。</li>
+  </ul>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egohumanoid-hardware-02.svg" alt="EgoHumanoid 采集硬件：头戴 ZED 与 PICO VR">
+  </figure>
+  <p class="caption">图 9. 采集硬件：人 / G1 均头戴 ZED Mini，人侧另有 PICO VR。</p>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egohumanoid-view-align-visualization-04.svg" alt="EgoHumanoid 视角对齐四阶段">
+  </figure>
+  <p class="caption">图 10. 视角对齐：原 ego 图 → 深度 → 重投影 → inpaint。</p>
+
+  <h3>4.2 训练流程</h3>
+  <ul>
+    <li><strong>初始化</strong>：加载 <code>pi05_base</code>，<code>Pi0Config(pi05=True)</code>。</li>
+    <li><strong>目标</strong>：flow matching。\(x_t = t\,\varepsilon + (1-t)\,a\)，\(u_t = \varepsilon - a\)，预测 \(v_t\) 对 \(u_t\) 的 MSE。</li>
+    <li><strong>坏样本</strong>：per-sample \(\ell &gt; 10\) 的样本置零，不回传。</li>
+    <li><strong>规模</strong>：示例 50,000 step，batch 256。</li>
+  </ul>
+
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/egohumanoid-alignment-03.svg" alt="EgoHumanoid 视角对齐与动作对齐管线">
+  </figure>
+  <p class="caption">图 11. 人机对齐：视角变换与统一动作空间。</p>
+
+  <details class="codefold">
+    <summary>4.3 核心代码</summary>
+    <div class="codefold-body">
+  <figure class="code">
+    <figcaption><a href="https://github.com/OpenDriveLab/EgoHumanoid/blob/f32696d7aeb58be86a1352f316789e3759f7aba4/src/openpi/training/config.py">config.py</a> · 数据键</figcaption>
+    <pre><code>_transforms.RepackTransform({
+    "images": {"head_left": "observation.images.left"},
+    "action_delta_eef": "action_delta_eef",
+    "teleop_navigate": "teleop_navigate",
+    "delta_height": "delta_height",
+    "hand_status": "hand_status",
+    "prompt": "prompt",
+})
+action_sequence_keys = ("action_delta_eef", "delta_height", "teleop_navigate", "hand_status")</code></pre>
+  </figure>
+  <figure class="code">
+    <figcaption><a href="https://github.com/OpenDriveLab/EgoHumanoid/blob/f32696d7aeb58be86a1352f316789e3759f7aba4/src/openpi/models/pi0.py">pi0.py</a> · flow matching loss</figcaption>
+    <pre><code>x_t = time_expanded * noise + (1 - time_expanded) * actions
+u_t = noise - actions
+v_t = self.action_out_proj(suffix_out[:, -self.action_horizon :])
+squared_error = jnp.square(v_t - u_t)
+loss_per_timestep = jnp.mean(squared_error, axis=-1)</code></pre>
+  </figure>
+  <figure class="code">
+    <figcaption><a href="https://github.com/OpenDriveLab/EgoHumanoid/blob/f32696d7aeb58be86a1352f316789e3759f7aba4/scripts/train.py">scripts/train.py</a> · 坏样本屏蔽</figcaption>
+    <pre><code>chunked_loss = model.compute_loss(rng, observation, actions, train=True, action_mask=action_mask)
+per_sample_loss = jnp.mean(chunked_loss, axis=-1)
+is_valid = jax.lax.stop_gradient(per_sample_loss &lt;= loss_threshold)  # 默认 10.0
+masked_loss = jnp.where(is_valid, per_sample_loss, 0.0)
+mean_loss = jnp.sum(masked_loss) / jnp.maximum(num_valid, 1.0)</code></pre>
+  </figure>
+    </div>
+  </details>
+
+  <h2 id="compare">5. 对照</h2>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>EgoVLA</th>
+        <th>H-RDT</th>
+        <th>EgoHumanoid</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>ego 相机</td><td>公开头戴数据集</td><td>AVP 头戴</td><td>头戴 ZED Mini</td></tr>
+      <tr><td>语言</td><td>NVILA 文本</td><td>预计算 T5</td><td>PaliGemma prompt</td></tr>
+      <tr><td>action 坐标系</td><td>当前相机系</td><td>ARKit origin</td><td>对齐后的机器人式 \(\Delta\mathrm{EEF}\)</td></tr>
+      <tr><td>action 内容</td><td>腕 + rot6d + MANO</td><td>腕 + rot6d + 指尖</td><td>\(\Delta\mathrm{EEF}\) + 底盘 + 开合</td></tr>
+      <tr><td>backbone</td><td>Qwen2-VL / NVILA</td><td>SigLIP + DINO + DiT</td><td>PaliGemma + action expert</td></tr>
+      <tr><td>loss</td><td>加权 L1/L2 回归</td><td>flow MSE</td><td>flow MSE</td></tr>
+      <tr><td>人机衔接</td><td>同头仿真微调</td><td>换 action 头</td><td>共训加权 mix</td></tr>
+    </tbody>
+  </table>
+</article>
+<script>
+(function waitKatex() {
+  if (typeof renderMathInElement !== "function") {
+    setTimeout(waitKatex, 30);
+    return;
+  }
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "\\[", right: "\\]", display: true},
+      {left: "\\(", right: "\\)", display: false}
+    ],
+    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+    throwOnError: false
+  });
+})();
+</script>
+</body>
+</html>
