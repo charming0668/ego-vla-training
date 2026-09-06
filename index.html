@@ -177,9 +177,7 @@
     }
     @media (min-width: 760px) {
       .overview { grid-template-columns: 1fr 1fr; }
-    }
-    @media (min-width: 1100px) {
-      .overview { grid-template-columns: 1fr 1fr 1fr; }
+      .diagram:nth-child(n + 3) { border-top: 1px solid var(--line); }
     }
     .diagram {
       margin: 0;
@@ -278,7 +276,7 @@
   </ul>
   <p>时间上会抽成固定长度的 action chunk，和图像、语言对齐后才送进网络。</p>
 
-  <h3>1.2 三个项目怎么接</h3>
+  <h3>1.2 五个项目怎么接到夹爪 / EEF</h3>
   <ul>
     <li><strong>EgoVLA</strong>：相机系腕 3D + rot6D + MANO。部署时 MANO 走 IK 得到臂 EEF，指尖再映射到机器人手关节。</li>
     <li><strong>H-RDT</strong>：双手各 24 维（腕 3 + rot6D + 五指尖 \(\times 3\)），预训练就在这 48 维上。微调时丢掉人手头，换成机器人 action 维。</li>
@@ -338,7 +336,7 @@
 
   <h2 id="egovla">2. EgoVLA</h2>
   <blockquote>
-    <p>图像和语言走 VLM，动作由 trajectory decoder 回归。三条里最接近标准 VLM-VLA。</p>
+    <p>图像和语言走 VLM，动作由 trajectory decoder 回归。五个里最接近标准 VLM-VLA。</p>
     <footer>Yang et al. EgoVLA. <a href="https://arxiv.org/abs/2507.12440">arXiv:2507.12440</a> · <a href="https://github.com/RchalYang/EgoVLA_Release">GitHub</a></footer>
   </blockquote>
   <figure class="paper">
