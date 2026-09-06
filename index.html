@@ -105,12 +105,59 @@
     }
     figure.paper {
       margin: 8px 0 8px;
+      position: relative;
     }
     figure.paper img {
       width: 100%;
       height: auto;
       display: block;
       background: #fff;
+    }
+    figure.paper .zoom {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      margin: 0;
+      padding: 2px 7px;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--muted);
+      cursor: pointer;
+    }
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      background: rgba(26, 26, 26, 0.45);
+    }
+    #lightbox.is-open { display: flex; }
+    #lightbox img {
+      max-width: min(1100px, 100%);
+      max-height: calc(100vh - 80px);
+      width: auto;
+      height: auto;
+      background: #fff;
+    }
+    #lightbox .close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      margin: 0;
+      padding: 2px 7px;
+      font: inherit;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--muted);
+      cursor: pointer;
     }
     .overview {
       display: grid;
@@ -263,6 +310,7 @@
   </blockquote>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egovla-teaser-01.svg" alt="EgoVLA teaser：人体第一人称视频与人形机器人经统一动作空间训练">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 2. EgoVLA 总览：人体第一人称视频经统一动作空间训练、部署。</p>
 
@@ -284,6 +332,7 @@
   </table>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egovla-instruction-following-human-05.svg" alt="EgoVLA 第一人称人手轨迹与语言指令">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 3. HOI4D 第一人称人手轨迹：红为 GT，绿为预测；改语言指令后轨迹变化。</p>
 
@@ -296,10 +345,12 @@
   </ul>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egovla-pipeline-02.svg" alt="EgoVLA 训练架构：视觉历史、语言、本体感觉进入 NVILA">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 4. 训练架构：ego 视觉历史 + 语言 + proprio → VLM → Action Head。</p>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egovla-align-action-space-03.svg" alt="EgoVLA 人体与机器人统一动作空间">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 5. 人体 / 机器人动作对齐与 MANO、IK retarget。</p>
 
@@ -310,6 +361,7 @@
   </blockquote>
   <figure class="paper">
     <img src="assets/ego-vla-figures/hrdt-overview-1.svg" alt="H-RDT 总览：ego 人手预训练数据与跨本体微调">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 6. H-RDT 总览：ego 人手预训练后再跨本体微调。</p>
 
@@ -338,6 +390,7 @@
   </ul>
   <figure class="paper">
     <img src="assets/ego-vla-figures/hrdt-framework-2.svg" alt="H-RDT 两阶段训练：人体预训练与跨本体微调">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 7. 两阶段训练：人体 ego 预训练，再冻视觉 / 语言、换机器人 action 头。</p>
 
@@ -348,6 +401,7 @@
   </blockquote>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egohumanoid-teaser-01.svg" alt="EgoHumanoid 总览：野外 ego 人数据与实验室机器人共训">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 8. 野外 ego 人数据与实验室机器人数据对齐后共训。</p>
 
@@ -368,10 +422,12 @@
   </table>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egohumanoid-hardware-02.svg" alt="EgoHumanoid 采集硬件：头戴 ZED 与 PICO VR">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 9. 采集硬件：人 / 机器人均头戴相机，人侧另有 VR。</p>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egohumanoid-view-align-visualization-04.svg" alt="EgoHumanoid 视角对齐四阶段">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 10. 视角对齐：原 ego 图 → 深度 → 重投影 → inpaint。</p>
 
@@ -384,6 +440,7 @@
   </ul>
   <figure class="paper">
     <img src="assets/ego-vla-figures/egohumanoid-alignment-03.svg" alt="EgoHumanoid 视角对齐与动作对齐管线">
+    <button type="button" class="zoom">放大</button>
   </figure>
   <p class="caption">图 11. 人机对齐：视角变换与统一动作空间。</p>
 
@@ -408,6 +465,48 @@
     </tbody>
   </table>
 </article>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="放大图片">
+  <button type="button" class="close">关闭</button>
+  <img alt="">
+</div>
+<script>
+(function () {
+  var box = document.getElementById("lightbox");
+  var boxImg = box.querySelector("img");
+  var closeBtn = box.querySelector(".close");
+  var lastBtn = null;
+
+  function openFrom(btn) {
+    var fig = btn.closest("figure.paper");
+    var img = fig && fig.querySelector("img");
+    if (!img) return;
+    lastBtn = btn;
+    boxImg.src = img.currentSrc || img.src;
+    boxImg.alt = img.alt || "";
+    box.classList.add("is-open");
+    closeBtn.focus();
+  }
+
+  function close() {
+    if (!box.classList.contains("is-open")) return;
+    box.classList.remove("is-open");
+    boxImg.removeAttribute("src");
+    boxImg.alt = "";
+    if (lastBtn) lastBtn.focus();
+  }
+
+  document.querySelectorAll("figure.paper .zoom").forEach(function (btn) {
+    btn.addEventListener("click", function () { openFrom(btn); });
+  });
+  closeBtn.addEventListener("click", close);
+  box.addEventListener("click", function (e) {
+    if (e.target === box) close();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") close();
+  });
+})();
+</script>
 <script>
 (function waitKatex() {
   if (typeof renderMathInElement !== "function") {
