@@ -93,10 +93,10 @@
       font-size: 13px;
     }
     table.projects td:first-child {
-      width: auto;
-      white-space: normal;
-      color: inherit;
-      font-weight: inherit;
+      width: 7em;
+      white-space: nowrap;
+      color: var(--muted);
+      font-weight: 600;
     }
     table.projects td strong {
       display: block;
@@ -225,6 +225,7 @@
   <table class="projects">
     <thead>
       <tr>
+        <th></th>
         <th>EgoVLA</th>
         <th>H-RDT</th>
         <th>EgoHumanoid</th>
@@ -234,6 +235,7 @@
     </thead>
     <tbody>
       <tr>
+        <td>数据</td>
         <td><strong>公开头戴数据</strong>TACO / HOT3D / HOI4D / HoloAssist</td>
         <td><strong>EgoDex 头戴</strong>AVP 1080p + 双手 3D</td>
         <td><strong>头戴 ZED</strong>PICO VR + ZED Mini</td>
@@ -241,6 +243,7 @@
         <td><strong>2 万小时 ego</strong>野外头戴 + EgoDex</td>
       </tr>
       <tr>
+        <td>转到夹爪</td>
         <td><strong>当前相机系动作</strong>腕 3D + rot6D + MANO</td>
         <td><strong>ARKit 系 48D</strong>腕 + rot6D + 五指尖 × 2</td>
         <td><strong>视角 / 动作对齐</strong>\(\Delta\mathrm{EEF}\) + 导航 + 手开合</td>
@@ -248,6 +251,7 @@
         <td><strong>相对腕 + 22-DoF</strong>关键点 retarget 到灵巧手</td>
       </tr>
       <tr>
+        <td>模型与训练</td>
         <td><strong>VLM 回归</strong>加权 L1/L2，关掉 LM next-token</td>
         <td><strong>T5 + DiT</strong>预计算语言，flow matching</td>
         <td><strong>\(\pi_{0.5}\)</strong>PaliGemma + flow matching</td>
@@ -255,6 +259,7 @@
         <td><strong>VLM + DiT flow</strong>结构类似 GR00T N1</td>
       </tr>
       <tr>
+        <td>人机衔接</td>
         <td><strong>仿真微调</strong>同一 decoder，换 humanoid demo</td>
         <td><strong>换头微调</strong>冻 backbone，重初始化 action 头</td>
         <td><strong>人机共训</strong>与 G1 遥操作加权 mix</td>
