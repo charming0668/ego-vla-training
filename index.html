@@ -113,6 +113,26 @@
       background: #fff;
       cursor: zoom-in;
     }
+    figure.paper video {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #111;
+    }
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 8px 0 8px;
+      align-items: start;
+    }
+    .pair figure.paper { margin: 0; }
+    .pair .sub {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
     #lightbox {
       display: none;
       position: fixed;
@@ -156,6 +176,9 @@
       border-bottom: 1px solid var(--line);
     }
     @media (min-width: 760px) {
+      .overview { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 1100px) {
       .overview { grid-template-columns: 1fr 1fr 1fr; }
     }
     .diagram {
@@ -169,7 +192,8 @@
         padding: 20px 22px 16px;
         border-right: 1px solid var(--line);
       }
-      .diagram:first-child { padding-left: 0; }
+      .diagram:nth-child(odd) { padding-left: 0; }
+      .diagram:nth-child(even) { padding-right: 0; border-right: none; }
       .diagram:last-child { padding-right: 0; border-right: none; }
     }
     .diagram h4 {
@@ -228,6 +252,7 @@
       h1 { font-size: 24px; }
       table { display: block; overflow-x: auto; }
       td:first-child { white-space: normal; }
+      .pair { grid-template-columns: 1fr; }
     }
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
@@ -237,9 +262,9 @@
 <body>
 <article>
   <h1>用 Ego 数据训练 VLA：数据格式与训练方式</h1>
-  <p class="meta">2026-09-05</p>
+  <p class="meta">2026-09-06</p>
 
-  <p>人体第一人称视频本身只有像素。要训练 VLA，必须先变成图像、语言和动作标签。下面三个开源项目都是「人体 ego RGB + 语言 → 预测动作」。差别只在动作怎么定义，以及人到机器人怎么接。</p>
+  <p>人体第一人称视频本身只有像素。要训练 VLA，必须先变成图像、语言和动作标签。下面五个项目都是「人体 ego RGB + 语言 → 预测动作」。差别只在动作怎么定义，以及人到机器人怎么接。</p>
 
   <h2 id="retarget">1. 人手如何变成夹爪轨迹</h2>
   <p>Ego 视频里没有电机指令。进入 VLA 之前，要把手的运动写成机械臂能监督的位姿序列：腕部当作末端执行器，手指压成夹爪开合或灵巧手关节。</p>
@@ -247,7 +272,7 @@
   <h3>1.1 共同步骤</h3>
   <ul>
     <li><strong>得到手</strong>：从第一人称视频估计 3D 手，或直接用 VR / ARKit 骨骼。常见表示是腕部位姿 \(T_{\mathrm{wrist}}\in\mathrm{SE}(3)\)，加上 MANO 参数或指尖 3D。</li>
-    <li><strong>选定坐标系</strong>：把未来腕位变到某一固定参考系。EgoVLA 用<strong>当前相机系</strong>；H-RDT 用 EgoDex 的 <strong>ARKit origin</strong>（地面静止系）；EgoHumanoid 对齐到机器人头相机后再写相对 \(\Delta\mathrm{EEF}\)。</li>
+    <li><strong>选定坐标系</strong>：把未来腕位变到某一固定参考系。EgoVLA 用<strong>当前相机系</strong>；H-RDT 用 EgoDex 的 <strong>ARKit origin</strong>（地面静止系）；EgoHumanoid 对齐到机器人头相机后再写相对 \(\Delta\mathrm{EEF}\)；Qwen-RobotManip 末端用<strong>相机系 delta pose</strong>；EgoScale 先把相机系腕变到世界系，再写成相对腕 \(\Delta W\)。</li>
     <li><strong>腕 → 夹爪 / 臂末端</strong>：腕位置当平移，旋转常写成 rot6D。这就是夹爪或 EEF 的轨迹 \(p_t, R_t\)。相对动作则取 \(\Delta p_t = p_{t}-p_{t-1}\)。</li>
     <li><strong>手指 → 开合或关节</strong>：平行夹爪只用一个开合量。灵巧手把指尖或 MANO 再映射到机器人手关节。可以先在人手动作空间里学，部署时再 retarget。</li>
   </ul>
@@ -258,6 +283,8 @@
     <li><strong>EgoVLA</strong>：相机系腕 3D + rot6D + MANO。部署时 MANO 走 IK 得到臂 EEF，指尖再映射到机器人手关节。</li>
     <li><strong>H-RDT</strong>：双手各 24 维（腕 3 + rot6D + 五指尖 \(\times 3\)），预训练就在这 48 维上。微调时丢掉人手头，换成机器人 action 维。</li>
     <li><strong>EgoHumanoid</strong>：上肢写成双臂 \(\Delta\mathrm{EEF}\)，手只保留开合，不再保留逐指自由度。</li>
+    <li><strong>Qwen-RobotManip</strong>：人手 21 关键点写成夹爪 \((p,R,w)\)，再 H2R 渲染成 15 种双臂机器人；训练时进 80 维 canonical。</li>
+    <li><strong>EgoScale</strong>：相对腕 \(\Delta W\) 人机共用；手指优化 retarget 到 22-DoF 灵巧手关节，低自由度本体再换手部 adapter。</li>
   </ul>
 
   <div class="overview">
@@ -288,8 +315,26 @@
         <div class="step"><span class="n">4</span><div><strong>人机共训</strong><p>与 G1 遥操作加权 mix</p></div></div>
       </div>
     </figure>
+    <figure class="diagram">
+      <h4>Qwen-RobotManip</h4>
+      <div class="pipe">
+        <div class="step"><span class="n">1</span><div><strong>开源头戴 + 真机</strong><p>EgoDex / VITRA / EgoVerse 与 OXE 等</p></div></div>
+        <div class="step"><span class="n">2</span><div><strong>H2R 合成夹爪</strong><p>\((p,R,w)\) 渲染 15 种双臂</p></div></div>
+        <div class="step"><span class="n">3</span><div><strong>Qwen-VL + DiT</strong><p>80 维 canonical，相机系 \(\Delta\)pose</p></div></div>
+        <div class="step"><span class="n">4</span><div><strong>双流预训练</strong><p>flow matching 与 VLM 共训</p></div></div>
+      </div>
+    </figure>
+    <figure class="diagram">
+      <h4>EgoScale</h4>
+      <div class="pipe">
+        <div class="step"><span class="n">1</span><div><strong>2 万小时 ego</strong><p>野外头戴 + EgoDex</p></div></div>
+        <div class="step"><span class="n">2</span><div><strong>相对腕 + 22-DoF</strong><p>关键点 retarget 到灵巧手</p></div></div>
+        <div class="step"><span class="n">3</span><div><strong>VLM + DiT flow</strong><p>结构类似 GR00T N1</p></div></div>
+        <div class="step"><span class="n">4</span><div><strong>对齐 mid-train</strong><p>少量人机 play 再 post-train</p></div></div>
+      </div>
+    </figure>
   </div>
-  <p class="caption">图 1. 三个项目从 ego 源到机器人，各自四步。</p>
+  <p class="caption">图 1. 五个项目从 ego 源到机器人，各自四步。</p>
 
   <h2 id="egovla">2. EgoVLA</h2>
   <blockquote>
@@ -422,7 +467,120 @@
   </figure>
   <p class="caption">图 11. 人机对齐：视角变换与统一动作空间。</p>
 
-  <h2 id="compare">5. 对照</h2>
+  <h2 id="qwen-robotmanip">5. Qwen-RobotManip</h2>
+  <blockquote>
+    <p>对齐再缩放：异构真机与人体 ego 先写成同一套 80 维动作，再用 H2R 把人手视频合成 15 种双臂轨迹。Qwen-VL 出语义，DiT 用 flow matching 出连续动作。</p>
+    <footer>Qwen Team. Qwen-RobotManip. <a href="https://arxiv.org/abs/2606.17846">arXiv:2606.17846</a></footer>
+  </blockquote>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/qwen-method-overview.svg" alt="Qwen-RobotManip 整体架构：Qwen-VL backbone 与 flow-matching DiT action head">
+  </figure>
+  <p class="caption">图 12. 模型总览：多视角视觉、结构化 embodiment prompt 与历史 context 进入 Qwen-VL，再经交替 cross-attention 注入 DiT；状态/动作共用 80 维 canonical，末端为相机系 delta pose。</p>
+
+  <h3>5.1 数据</h3>
+  <p>人体源是带手标注的头戴视频；真机源是开源操作集。二者都经同一套清洗后，写成 80 维 canonical。人体还会再走 H2R，渲染成机器人外观。</p>
+  <table>
+    <thead>
+      <tr><th>字段</th><th>shape / 内容</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RGB</td><td>一至多路相机；ViT 动态分辨率，固定 \(H\times W\) 论文未给出</td></tr>
+      <tr><td>人体 ego</td><td>EgoDex 732 h（AVP，双手各 25 关节 \(\mathrm{SE}(3)\)，30 Hz）+ VITRA 247 h + EgoVerse 954 h，合计约 1,933 h</td></tr>
+      <tr><td>手标注</td><td>统一成 MANO + 每手 21 关键点；缺 MANO 的源用优化拟合</td></tr>
+      <tr><td>H2R 合成</td><td>同一条人手轨迹渲染 15 种双臂形态，约 24,808 h</td></tr>
+      <tr><td>真机</td><td>OXE / DROID / AgiBotWorld 等开源，约 11,420 h；预训练合计约 38,100 h</td></tr>
+      <tr><td>80 维</td><td>两臂各 29：关节 7 + EEF 位置 3 + rot6D 6 + 夹爪 1 + 灵巧手 12；另预留 22（底盘等）</td></tr>
+      <tr><td>坐标系</td><td>state 用绝对量；EEF 动作为相机系 delta pose（需内外参）；无标定时退回基座相对</td></tr>
+      <tr><td>语言</td><td>结构化 prompt：embodiment / instruction / speed / fps / camera view</td></tr>
+      <tr><td>动作 chunk</td><td>\(\mathbf{a}\in\mathbb{R}^{T\times 80}\)；具体 \(T\) 论文未给出</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 如何转到夹爪 / EEF</h3>
+  <p>人手没有电机指令。Qwen 把每帧写成夹爪 \(\mathbf{a}_t=(p_t,R_t,w_t)\)：虚拟指尖 \(\mathbf{k}_{\mathrm{vf}}=0.7\,\mathbf{k}_{\mathrm{index}}+0.3\,\mathbf{k}_{\mathrm{middle}}\)，位置取拇指与虚拟指中点，开合取其距离；夹爪坐标系由拇指—虚拟指连线与腕到指尖方向构成右手系。位置/开合做 Savitzky–Golay，姿态做 SLERP。再对 15 种本体搜基座位姿、MuJoCo IK，把人手从画面抹掉后把机器人合成回去。</p>
+  <p>论文里的 H2R 总图偏小，细节不易看清。下面的过程图与视频借自独立项目 <a href="https://www-ye.github.io/ego2robot_blog/">Ego2Robot</a>（该页写明其合成数据进入 Qwen-RobotManip 预训练）。这不是 Qwen 原文图。</p>
+  <figure class="paper">
+    <video controls preload="metadata" src="https://www-ye.github.io/ego2robot_blog/assets/ego2robot_video.mp4">
+      浏览器无法播放时，请打开 <a href="https://www-ye.github.io/ego2robot_blog/">Ego2Robot Overview Video</a>。
+    </video>
+  </figure>
+  <p class="caption">图 13. Ego2Robot Overview Video：人手 ego 如何被 retarget、抹手、再合成机器人轨迹。来源：<a href="https://www-ye.github.io/ego2robot_blog/">www-ye.github.io/ego2robot_blog</a>，不是 Qwen 论文原图。</p>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/ego2robot-pipeline.png" alt="Ego2Robot pipeline：动作对齐、视觉对齐与质量筛选">
+  </figure>
+  <p class="caption">图 14. The Ego2Robot Pipeline：动作对齐（关键点 → TCP / 开合 / 姿态）→ 视觉对齐（分割、inpaint、基座搜索、IK、深度合成）→ 质量筛选。来源同上，不是 Qwen 论文原图。</p>
+  <figure class="paper">
+    <img src="assets/ego-vla-figures/qwen-h2r-pipeline.svg" alt="Qwen-RobotManip 论文中的 Human-to-robot 合成管线">
+  </figure>
+  <p class="caption">图 15. Qwen 论文自带的 H2R 图（偏小）：上为 retarget / 分割 / inpaint / IK / 合成，下为 1,933 h ego 扩到约 24,808 h、15 种形态。</p>
+
+  <h3>5.3 模型结构与训练如何产出动作</h3>
+  <p>视觉语言走 Qwen3.5-4B（最后一层隐状态 \(D_{\mathrm{vlm}}=2560\)），动作走 10 层 DiT（\(D_{\mathrm{act}}=768\)，12 头）。DiT 对 state/action token 做自注意力，再交替 cross-attend 视觉 token 与语言 token。本体感觉经两层 MLP 接到噪声动作序列前面。</p>
+  <ul>
+    <li><strong>输入</strong>：多视角图像 + 结构化语言 + 80 维 state；可选历史 context chunk（观测、state、已执行动作）。</li>
+    <li><strong>输出</strong>：未来 \(T\) 步、80 维动作。关节为绝对值，EEF 为相对 delta；未占用的维用二值 mask 不计入损失。人体数据在手离开画面后整臂 mask 掉。</li>
+    <li><strong>目标</strong>：flow matching。\(x_t=(1-t)\,\varepsilon+t\,\mathbf{a}\)，\(t\sim\mathrm{Beta}(1,1.5)\)，预测速度 \(\mathbf{a}-\varepsilon\) 的 MSE。推理 4 步 Euler。另以 \(\lambda=0.1\) 做 VLM next-token，VLA 与 VL 约 9:1 双流共训。</li>
+    <li><strong>人机怎么接</strong>：不换动作头。H2R 把人变成机器人轨迹后，与真机共用 80 维槽位；后训练只优化 flow matching，可做目标域 SFT。</li>
+  </ul>
+
+  <h2 id="egoscale">6. EgoScale</h2>
+  <blockquote>
+    <p>先在两万小时人体 ego 上预训练相对腕和灵巧手，再用少量对齐的人机 play 做 mid-training，最后用很少的机器人演示 post-train。结构按 GR00T N1 一类的 flow VLA。</p>
+    <footer>Zheng et al. EgoScale. <a href="https://arxiv.org/abs/2602.16710">arXiv:2602.16710</a> · <a href="https://research.nvidia.com/labs/gear/egoscale/">项目页</a></footer>
+  </blockquote>
+  <div class="pair">
+    <div>
+      <figure class="paper">
+        <img src="assets/ego-vla-figures/egoscale-ego-data-collection.svg" alt="EgoScale (a) 第一人称人体数据采集：头相机、腕相机、Vive 与 Manus">
+      </figure>
+      <p class="sub">(a) Egocentric Human Data Collection</p>
+    </div>
+    <div>
+      <figure class="paper">
+        <img src="assets/ego-vla-figures/egoscale-architecture.svg" alt="EgoScale (b) 模型架构：VLM backbone 与 DiT action expert">
+      </figure>
+      <p class="sub">(b) EgoScale Model Architecture</p>
+    </div>
+  </div>
+  <p class="caption">图 16. 原文 Figure 2。左：mid-training 采集与机器人同相机（头 + 双腕），Vive 跟腕、Manus 跟手。右：flow VLA，腕动作人机共享，本体感觉和手关节走 embodiment adapter。</p>
+
+  <h3>6.1 数据</h3>
+  <p>Stage I 是大规模、带噪声的野外 ego；Stage II 是实验室里与机器人视角对齐的少量人机数据。人手监督来自 SLAM 相机位姿和 21 关键点，不是电机指令。</p>
+  <table>
+    <thead>
+      <tr><th>字段</th><th>shape / 内容</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RGB</td><td>头戴 ego，30 FPS；固定分辨率论文未给出。Mid-training 另有左右腕相机，与机器人同内参、同视角</td></tr>
+      <tr><td>相机位姿</td><td>\(\mathbf{T}_{w\leftarrow c}^{t}\in\mathrm{SE}(3)\)，off-the-shelf SLAM</td></tr>
+      <tr><td>手</td><td>相机系 21 关键点，每个 \(\mathbf{H}_{c,i}^{t}\in\mathrm{SE}(3)\)；\(i=1\) 为腕</td></tr>
+      <tr><td>腕</td><td>世界系 \(\mathbf{W}_w^{t}=\mathbf{T}_{w\leftarrow c}^{t}\mathbf{H}_{c,1}^{t}\)；chunk 内相对首帧 \(\Delta\mathbf{W}^{t}=(\mathbf{W}_w^{0})^{-1}\mathbf{W}_w^{t}\)</td></tr>
+      <tr><td>手指</td><td>优化 retarget 到 Sharpa 22-DoF 关节 \(\mathbf{a}_{\mathrm{hand}}^{t}\in\mathbb{R}^{22}\)</td></tr>
+      <tr><td>Stage I</td><td>约 20,854 h 野外 ego（9,869 场景 / 6,015 任务 / 43,237 物体）+ EgoDex 829 h</td></tr>
+      <tr><td>Stage II</td><td>344 桌面任务：约 50 h 人（Vive 腕 + Manus 25 关节）+ 4 h 机器人遥操作</td></tr>
+      <tr><td>proprio</td><td>机器人有 \(q_t\)；人体用可学习占位 token</td></tr>
+      <tr><td>动作 chunk</td><td>预测未来一段 \(A_t=(a_t,\dots,a_{t+H})\)；具体 \(H\) 论文未给出</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 如何转到夹爪 / EEF</h3>
+  <p>EgoScale 的部署本体是带 22-DoF 灵巧手的双臂，不是平行夹爪。臂与夹爪式 EEF 仍共用「相对腕 / 相对末端」这一层。</p>
+  <ul>
+    <li><strong>腕 → 臂末端</strong>：相机系腕变到世界系后，在一个 action chunk 里相对该 chunk 第一帧写 \(\Delta\mathbf{W}^{t}\)。机器人双臂同样输出相对 EEF 的位置/姿态增量，因此人体腕轨迹可以直接监督机器人末端。</li>
+    <li><strong>手指 → 手关节</strong>：21 关键点经带关节限位的优化，映射到 Sharpa 22 维关节角，预训练就在这组关节上监督。换到 7-DoF 三指（Unitree G1）时，腕表示不变，只换手部 decoder。</li>
+    <li><strong>Stage II</strong>：人戴与机器人相同的头/腕相机；腕用 Vive，手用 Manus。视觉和动作都与真机对齐，用来把 Stage I 学到的人体运动落到可执行控制。</li>
+  </ul>
+
+  <h3>6.3 模型结构与训练如何产出动作</h3>
+  <p>结构按 flow-based VLA，接近 GR00T N1：VLM 把图像和语言编成 \(\phi_t\)，DiT action expert 再出动作。具体用哪一款 VLM、图像 token 数，论文未给出。</p>
+  <ul>
+    <li><strong>输入</strong>：图像 \(I_t\) + 语言 \(l_t\)；机器人再加 proprio \(q_t\)，人体用占位 token。腕增量在人机之间共享；不同本体的 proprio / 手关节走轻量 MLP adapter。</li>
+    <li><strong>输出</strong>：未来 \(H\) 步的相对腕 \(\Delta\mathbf{W}\) 加上手关节（主平台 22-DoF）。</li>
+    <li><strong>目标</strong>：flow matching（论文未写出与 \(\pi_{0.5}\) / GR00T 不同的公式细节）。</li>
+    <li><strong>人机怎么接</strong>：三阶段且不换整头——I 人体预训练（全模型解冻）；II 对齐人机 play，冻 VLM backbone，更新视觉编码器与 DiT；III 任务向机器人演示 post-train。腕表示始终共享。</li>
+  </ul>
+
+  <h2 id="compare">7. 对照</h2>
   <table>
     <thead>
       <tr>
@@ -430,16 +588,18 @@
         <th>EgoVLA</th>
         <th>H-RDT</th>
         <th>EgoHumanoid</th>
+        <th>Qwen-RobotManip</th>
+        <th>EgoScale</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td>ego 相机</td><td>公开头戴数据集</td><td>AVP 头戴</td><td>头戴相机</td></tr>
-      <tr><td>语言</td><td>VLM 文本</td><td>预计算 T5</td><td>prompt</td></tr>
-      <tr><td>action 坐标系</td><td>当前相机系</td><td>ARKit origin</td><td>对齐后的 \(\Delta\mathrm{EEF}\)</td></tr>
-      <tr><td>action shape</td><td>\((30,\,48)\)</td><td>\((16,\,48)\)</td><td>\((H,\,12+1+3+\mathrm{hand})\)</td></tr>
-      <tr><td>action 内容</td><td>腕 + rot6D + MANO</td><td>腕 + rot6D + 指尖</td><td>\(\Delta\mathrm{EEF}\) + 底盘 + 开合</td></tr>
-      <tr><td>训练方式</td><td>加权回归</td><td>flow matching</td><td>flow matching</td></tr>
-      <tr><td>人机衔接</td><td>同头仿真微调</td><td>换 action 头</td><td>共训加权 mix</td></tr>
+      <tr><td>ego 相机</td><td>公开头戴数据集</td><td>AVP 头戴</td><td>头戴相机</td><td>EgoDex / VITRA / EgoVerse</td><td>野外头戴 + EgoDex</td></tr>
+      <tr><td>语言</td><td>VLM 文本</td><td>预计算 T5</td><td>prompt</td><td>结构化 prompt</td><td>语言指令</td></tr>
+      <tr><td>action 坐标系</td><td>当前相机系</td><td>ARKit origin</td><td>对齐后的 \(\Delta\mathrm{EEF}\)</td><td>相机系 delta pose</td><td>世界系相对腕 \(\Delta W\)</td></tr>
+      <tr><td>action shape</td><td>\((30,\,48)\)</td><td>\((16,\,48)\)</td><td>\((H,\,12+1+3+\mathrm{hand})\)</td><td>\((T,\,80)\)，\(T\) 未给出</td><td>\((H,\,\Delta W+22)\)，\(H\) 未给出</td></tr>
+      <tr><td>action 内容</td><td>腕 + rot6D + MANO</td><td>腕 + rot6D + 指尖</td><td>\(\Delta\mathrm{EEF}\) + 底盘 + 开合</td><td>关节 / EEF / 夹爪 / 手槽位</td><td>相对腕 + 22-DoF 关节</td></tr>
+      <tr><td>训练方式</td><td>加权回归</td><td>flow matching</td><td>flow matching</td><td>flow matching + VLM 共训</td><td>flow matching</td></tr>
+      <tr><td>人机衔接</td><td>同头仿真微调</td><td>换 action 头</td><td>共训加权 mix</td><td>H2R 合成后同槽位训练</td><td>预训练 → 对齐 mid-train → post-train</td></tr>
     </tbody>
   </table>
 </article>
