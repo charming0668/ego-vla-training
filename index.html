@@ -89,6 +89,19 @@
       font-weight: 600;
       width: 22%;
     }
+    table.projects {
+      font-size: 13px;
+    }
+    table.projects td:first-child {
+      width: 1.6em;
+      text-align: right;
+      padding-left: 0;
+    }
+    table.projects td strong {
+      display: block;
+      font-weight: 650;
+      color: var(--text);
+    }
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.86em;
@@ -167,115 +180,6 @@
       border: 1px solid var(--muted);
       cursor: pointer;
     }
-    .overview {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      margin: 4px 0 8px;
-      overflow: hidden;
-      border-top: 1px solid var(--text);
-      border-bottom: 1px solid var(--line);
-    }
-    .diagram {
-      display: grid;
-      grid-template-columns: 8.6em minmax(0, 1fr);
-      gap: 0 14px;
-      align-items: start;
-      margin: 0;
-      padding: 12px 0;
-      background: none;
-      border: none;
-      border-bottom: 1px solid var(--line);
-    }
-    .diagram:last-child { border-bottom: none; }
-    .diagram h4 {
-      margin: 0;
-      padding-top: 1px;
-      font-size: 14px;
-      font-weight: 650;
-      letter-spacing: 0.01em;
-      line-height: 1.35;
-      overflow-wrap: break-word;
-    }
-    .pipe {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin: 0;
-      min-width: 0;
-    }
-    .step {
-      display: grid;
-      grid-template-columns: 18px minmax(0, 1fr);
-      gap: 8px;
-      position: relative;
-      min-width: 0;
-      padding: 0 10px;
-      border-right: 1px solid var(--line);
-    }
-    .step:first-child { padding-left: 0; }
-    .step:last-child {
-      padding-right: 0;
-      padding-bottom: 0;
-      border-right: none;
-    }
-    .n {
-      width: 18px;
-      height: 18px;
-      border: none;
-      border-radius: 50%;
-      background: var(--text);
-      color: #fff;
-      font-size: 10px;
-      line-height: 18px;
-      text-align: center;
-      position: relative;
-      z-index: 1;
-    }
-    .step p {
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.4;
-      color: var(--muted);
-    }
-    .step strong {
-      display: block;
-      margin-bottom: 2px;
-      font-size: 13px;
-      font-weight: 650;
-      color: var(--text);
-    }
-    @media (max-width: 759px) {
-      .diagram {
-        grid-template-columns: 1fr;
-        gap: 10px 0;
-        padding: 16px 0;
-      }
-      .diagram h4 { padding-top: 0; font-size: 15px; }
-      .pipe { display: block; }
-      .step {
-        grid-template-columns: 22px minmax(0, 1fr);
-        gap: 12px;
-        padding: 0 0 16px;
-        border-right: none;
-      }
-      .step:last-child { padding-bottom: 0; }
-      .step:not(:last-child)::before {
-        content: "";
-        position: absolute;
-        left: 10px;
-        top: 22px;
-        bottom: 0;
-        width: 1px;
-        background: var(--line);
-      }
-      .n {
-        width: 22px;
-        height: 22px;
-        font-size: 11px;
-        line-height: 22px;
-      }
-      .step p { font-size: 13px; line-height: 1.45; }
-    }
     .katex { font-size: 1.05em; }
     @media (max-width: 640px) {
       article { padding: 32px 16px 72px; }
@@ -317,53 +221,52 @@
     <li><strong>EgoScale</strong>：相对腕 \(\Delta W\) 人机共用；手指优化 retarget 到 22-DoF 灵巧手关节，低自由度本体再换手部 adapter。</li>
   </ul>
 
-  <div class="overview">
-    <figure class="diagram">
-      <h4>EgoVLA</h4>
-      <div class="pipe">
-        <div class="step"><span class="n">1</span><div><strong>公开头戴数据</strong><p>TACO / HOT3D / HOI4D / HoloAssist</p></div></div>
-        <div class="step"><span class="n">2</span><div><strong>当前相机系动作</strong><p>腕 3D + rot6D + MANO</p></div></div>
-        <div class="step"><span class="n">3</span><div><strong>VLM 回归</strong><p>加权 L1/L2，关掉 LM next-token</p></div></div>
-        <div class="step"><span class="n">4</span><div><strong>仿真微调</strong><p>同一 decoder，换 humanoid demo</p></div></div>
-      </div>
-    </figure>
-    <figure class="diagram">
-      <h4>H-RDT</h4>
-      <div class="pipe">
-        <div class="step"><span class="n">1</span><div><strong>EgoDex 头戴</strong><p>AVP 1080p + 双手 3D</p></div></div>
-        <div class="step"><span class="n">2</span><div><strong>ARKit 系 48D</strong><p>腕 + rot6D + 五指尖 × 2</p></div></div>
-        <div class="step"><span class="n">3</span><div><strong>T5 + DiT</strong><p>预计算语言，flow matching</p></div></div>
-        <div class="step"><span class="n">4</span><div><strong>换头微调</strong><p>冻 backbone，重初始化 action 头</p></div></div>
-      </div>
-    </figure>
-    <figure class="diagram">
-      <h4>EgoHumanoid</h4>
-      <div class="pipe">
-        <div class="step"><span class="n">1</span><div><strong>头戴 ZED</strong><p>PICO VR + ZED Mini</p></div></div>
-        <div class="step"><span class="n">2</span><div><strong>视角 / 动作对齐</strong><p>\(\Delta\mathrm{EEF}\) + 导航 + 手开合</p></div></div>
-        <div class="step"><span class="n">3</span><div><strong>\(\pi_{0.5}\)</strong><p>PaliGemma + flow matching</p></div></div>
-        <div class="step"><span class="n">4</span><div><strong>人机共训</strong><p>与 G1 遥操作加权 mix</p></div></div>
-      </div>
-    </figure>
-    <figure class="diagram">
-      <h4>Qwen-RobotManip</h4>
-      <div class="pipe">
-        <div class="step"><span class="n">1</span><div><strong>开源头戴 + 真机</strong><p>EgoDex / VITRA / EgoVerse 与 OXE 等</p></div></div>
-        <div class="step"><span class="n">2</span><div><strong>H2R 合成夹爪</strong><p>\((p,R,w)\) 渲染 15 种双臂</p></div></div>
-        <div class="step"><span class="n">3</span><div><strong>Qwen-VL + DiT</strong><p>80 维 canonical，相机系 \(\Delta\)pose</p></div></div>
-        <div class="step"><span class="n">4</span><div><strong>双流预训练</strong><p>flow matching 与 VLM 共训</p></div></div>
-      </div>
-    </figure>
-    <figure class="diagram">
-      <h4>EgoScale</h4>
-      <div class="pipe">
-        <div class="step"><span class="n">1</span><div><strong>2 万小时 ego</strong><p>野外头戴 + EgoDex</p></div></div>
-        <div class="step"><span class="n">2</span><div><strong>相对腕 + 22-DoF</strong><p>关键点 retarget 到灵巧手</p></div></div>
-        <div class="step"><span class="n">3</span><div><strong>VLM + DiT flow</strong><p>结构类似 GR00T N1</p></div></div>
-        <div class="step"><span class="n">4</span><div><strong>对齐 mid-train</strong><p>少量人机 play 再 post-train</p></div></div>
-      </div>
-    </figure>
-  </div>
+  <table class="projects">
+    <thead>
+      <tr>
+        <th></th>
+        <th>EgoVLA</th>
+        <th>H-RDT</th>
+        <th>EgoHumanoid</th>
+        <th>Qwen-RobotManip</th>
+        <th>EgoScale</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>公开头戴数据</strong>TACO / HOT3D / HOI4D / HoloAssist</td>
+        <td><strong>EgoDex 头戴</strong>AVP 1080p + 双手 3D</td>
+        <td><strong>头戴 ZED</strong>PICO VR + ZED Mini</td>
+        <td><strong>开源头戴 + 真机</strong>EgoDex / VITRA / EgoVerse 与 OXE 等</td>
+        <td><strong>2 万小时 ego</strong>野外头戴 + EgoDex</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>当前相机系动作</strong>腕 3D + rot6D + MANO</td>
+        <td><strong>ARKit 系 48D</strong>腕 + rot6D + 五指尖 × 2</td>
+        <td><strong>视角 / 动作对齐</strong>\(\Delta\mathrm{EEF}\) + 导航 + 手开合</td>
+        <td><strong>H2R 合成夹爪</strong>\((p,R,w)\) 渲染 15 种双臂</td>
+        <td><strong>相对腕 + 22-DoF</strong>关键点 retarget 到灵巧手</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>VLM 回归</strong>加权 L1/L2，关掉 LM next-token</td>
+        <td><strong>T5 + DiT</strong>预计算语言，flow matching</td>
+        <td><strong>\(\pi_{0.5}\)</strong>PaliGemma + flow matching</td>
+        <td><strong>Qwen-VL + DiT</strong>80 维 canonical，相机系 \(\Delta\)pose</td>
+        <td><strong>VLM + DiT flow</strong>结构类似 GR00T N1</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>仿真微调</strong>同一 decoder，换 humanoid demo</td>
+        <td><strong>换头微调</strong>冻 backbone，重初始化 action 头</td>
+        <td><strong>人机共训</strong>与 G1 遥操作加权 mix</td>
+        <td><strong>双流预训练</strong>flow matching 与 VLM 共训</td>
+        <td><strong>对齐 mid-train</strong>少量人机 play 再 post-train</td>
+      </tr>
+    </tbody>
+  </table>
   <p class="caption">图 1. 五个项目从数据到动作。</p>
 
   <h2 id="egovla">2. EgoVLA</h2>
