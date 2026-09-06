@@ -498,7 +498,7 @@
 
   <h3>5.2 如何转到夹爪 / EEF</h3>
   <p>人手没有电机指令。Qwen 把每帧写成夹爪 \(\mathbf{a}_t=(p_t,R_t,w_t)\)：虚拟指尖 \(\mathbf{k}_{\mathrm{vf}}=0.7\,\mathbf{k}_{\mathrm{index}}+0.3\,\mathbf{k}_{\mathrm{middle}}\)，位置取拇指与虚拟指中点，开合取其距离；夹爪坐标系由拇指—虚拟指连线与腕到指尖方向构成右手系。位置/开合做 Savitzky–Golay，姿态做 SLERP。再对 15 种本体搜基座位姿、MuJoCo IK，把人手从画面抹掉后把机器人合成回去。</p>
-  <p>论文里的 H2R 总图偏小，细节不易看清。下面的过程图与视频借自独立项目 <a href="https://www-ye.github.io/ego2robot_blog/">Ego2Robot</a>（该页写明其合成数据进入 Qwen-RobotManip 预训练）。这不是 Qwen 原文图。</p>
+  <p>Qwen 原文那张 H2R / 合成机器人数据的图展示不直观、不清晰。下面用 Ego2Robot 的 Overview Video 和 The Ego2Robot Pipeline 图，更清楚地展示人手演示如何转到夹爪 / EEF。视频与 pipeline 图来自 <a href="https://www-ye.github.io/ego2robot_blog/">Ego2Robot</a>（该页写明其合成数据进入 Qwen-RobotManip 预训练），不是 Qwen 论文原图。</p>
   <figure class="paper">
     <video controls preload="metadata" src="https://www-ye.github.io/ego2robot_blog/assets/ego2robot_video.mp4">
       浏览器无法播放时，请打开 <a href="https://www-ye.github.io/ego2robot_blog/">Ego2Robot Overview Video</a>。
@@ -512,7 +512,7 @@
   <figure class="paper">
     <img src="assets/ego-vla-figures/qwen-h2r-pipeline.svg" alt="Qwen-RobotManip 论文中的 Human-to-robot 合成管线">
   </figure>
-  <p class="caption">图 15. Qwen 论文自带的 H2R 图（偏小）：上为 retarget / 分割 / inpaint / IK / 合成，下为 1,933 h ego 扩到约 24,808 h、15 种形态。</p>
+  <p class="caption">图 15. Qwen 论文自带的 H2R 图（展示不直观、不清晰）：上为 retarget / 分割 / inpaint / IK / 合成，下为 1,933 h ego 扩到约 24,808 h、15 种形态。</p>
 
   <h3>5.3 模型结构与训练如何产出动作</h3>
   <p>视觉语言走 Qwen3.5-4B（最后一层隐状态 \(D_{\mathrm{vlm}}=2560\)），动作走 10 层 DiT（\(D_{\mathrm{act}}=768\)，12 头）。DiT 对 state/action token 做自注意力，再交替 cross-attend 视觉 token 与语言 token。本体感觉经两层 MLP 接到噪声动作序列前面。</p>
