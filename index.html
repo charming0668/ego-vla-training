@@ -168,73 +168,73 @@
       cursor: pointer;
     }
     .overview {
-      display: grid;
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 0;
       margin: 4px 0 8px;
+      overflow: hidden;
       border-top: 1px solid var(--text);
       border-bottom: 1px solid var(--line);
     }
-    @media (min-width: 760px) {
-      .overview { grid-template-columns: 1fr 1fr; }
-      .diagram:nth-child(n + 3) { border-top: 1px solid var(--line); }
-    }
     .diagram {
+      display: grid;
+      grid-template-columns: 8.6em minmax(0, 1fr);
+      gap: 0 14px;
+      align-items: start;
       margin: 0;
-      padding: 20px 0 16px;
+      padding: 12px 0;
       background: none;
       border: none;
+      border-bottom: 1px solid var(--line);
     }
-    @media (min-width: 760px) {
-      .diagram {
-        padding: 20px 22px 16px;
-        border-right: 1px solid var(--line);
-      }
-      .diagram:nth-child(odd) { padding-left: 0; }
-      .diagram:nth-child(even) { padding-right: 0; border-right: none; }
-      .diagram:last-child { padding-right: 0; border-right: none; }
-    }
+    .diagram:last-child { border-bottom: none; }
     .diagram h4 {
-      margin: 0 0 18px;
-      font-size: 15px;
+      margin: 0;
+      padding-top: 1px;
+      font-size: 14px;
       font-weight: 650;
       letter-spacing: 0.01em;
+      line-height: 1.35;
+      overflow-wrap: break-word;
     }
-    .pipe { margin: 0; }
+    .pipe {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 0;
+      min-width: 0;
+    }
     .step {
       display: grid;
-      grid-template-columns: 22px 1fr;
-      gap: 12px;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 8px;
       position: relative;
-      padding-bottom: 16px;
+      min-width: 0;
+      padding: 0 10px;
+      border-right: 1px solid var(--line);
     }
-    .step:last-child { padding-bottom: 0; }
-    .step:not(:last-child)::before {
-      content: "";
-      position: absolute;
-      left: 10px;
-      top: 22px;
-      bottom: 0;
-      width: 1px;
-      background: var(--line);
+    .step:first-child { padding-left: 0; }
+    .step:last-child {
+      padding-right: 0;
+      padding-bottom: 0;
+      border-right: none;
     }
     .n {
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       border: none;
       border-radius: 50%;
       background: var(--text);
       color: #fff;
-      font-size: 11px;
-      line-height: 22px;
+      font-size: 10px;
+      line-height: 18px;
       text-align: center;
       position: relative;
       z-index: 1;
     }
     .step p {
       margin: 0;
-      font-size: 13px;
-      line-height: 1.45;
+      font-size: 12px;
+      line-height: 1.4;
       color: var(--muted);
     }
     .step strong {
@@ -243,6 +243,38 @@
       font-size: 13px;
       font-weight: 650;
       color: var(--text);
+    }
+    @media (max-width: 759px) {
+      .diagram {
+        grid-template-columns: 1fr;
+        gap: 10px 0;
+        padding: 16px 0;
+      }
+      .diagram h4 { padding-top: 0; font-size: 15px; }
+      .pipe { display: block; }
+      .step {
+        grid-template-columns: 22px minmax(0, 1fr);
+        gap: 12px;
+        padding: 0 0 16px;
+        border-right: none;
+      }
+      .step:last-child { padding-bottom: 0; }
+      .step:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        top: 22px;
+        bottom: 0;
+        width: 1px;
+        background: var(--line);
+      }
+      .n {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+        line-height: 22px;
+      }
+      .step p { font-size: 13px; line-height: 1.45; }
     }
     .katex { font-size: 1.05em; }
     @media (max-width: 640px) {
@@ -332,7 +364,7 @@
       </div>
     </figure>
   </div>
-  <p class="caption">图 1. 五个项目从 ego 源到机器人，各自四步。</p>
+  <p class="caption">图 1. 五个项目从数据到动作。</p>
 
   <h2 id="egovla">2. EgoVLA</h2>
   <blockquote>
